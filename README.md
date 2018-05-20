@@ -2,7 +2,7 @@
 
 Yanny-Laurel debate-related WebAudio API pitch shifter
 
-Online demo: https://joric.github.io/laurel
+Online demo: https://joric.github.io/laurel/
 
 ## References
 
