@@ -4,6 +4,8 @@ Yanny-Laurel debate-related WebAudio API pitch shifter
 
 Online demo: https://joric.github.io/laurel/
 
+Simpler version with playback rate alteration: https://joric.github.io/laurel/test.html
+
 ## References
 
 * [Original instagram of Katie Hetzel (now closed)](https://www.instagram.com/katiehetzel/)
