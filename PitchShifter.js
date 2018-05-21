@@ -6,6 +6,7 @@ PitchShifter = function(audioContext) {
 	grainSize = validGranSizes[1],
 	pitchRatio = 1.0,
 	overlapRatio = 0.50,
+	bypass = false,
 
 	hannWindow = function(length) {
 		let window = new Float32Array(length);
@@ -34,14 +35,20 @@ PitchShifter = function(audioContext) {
 		pitchShifterProcessor.buffer = new Float32Array(grainSize * 2);
 		pitchShifterProcessor.grainWindow = hannWindow(grainSize);
 		pitchShifterProcessor.pitchRatio = pitchRatio;
+		pitchShifterProcessor.bypass = bypass;
 
 		pitchShifterProcessor.onaudioprocess = function (event) {
-
-			//console.log(pitchRatio);
 
 			let pitchRatio = pitchShifterProcessor.pitchRatio;
 			let inputData = event.inputBuffer.getChannelData(0);
 			let outputData = event.outputBuffer.getChannelData(0);
+
+			if (pitchShifterProcessor.bypass) {
+				for (i = 0; i < inputData.length; i++) {
+					outputData[i] = inputData[i];
+				}
+				return;
+			}
 
 			// Apply the window to the input buffer
 			for (i = 0; i < inputData.length; i++) {

@@ -4,8 +4,7 @@ Yanny-Laurel debate-related WebAudio API pitch shifter
 
 Live demos:
 
-* Pitch shifter version: https://joric.github.io/laurel/
-* Playback rate version: https://joric.github.io/laurel/rate.html
+* Pitch shifter version: https://joric.github.io/laurel
 
 ## References
 
