@@ -6,7 +6,7 @@ Live demo: https://joric.github.io/laurel
 
 ## References
 
-* [Original instagram of Katie Hetzel (now closed)](https://www.instagram.com/katiehetzel/)
+* [Original instagram post by Katie Hetzel](https://www.instagram.com/stories/highlights/17932318081098385/)
 * [Reddit thread by RolandCamry - What do you guys hear?](https://www.reddit.com/r/blackmagicfuckery/comments/8ixrwi/what_do_you_guys_hear/)
 * [Twitter repost by CloeCouture - What do you hear?! Yanny or Laurel](https://twitter.com/CloeCouture/status/996218489831473152)
 * [NY Times - We Made a Tool So You Can Hear Both Yanny and Laurel](https://nytimes.com/interactive/2018/05/16/upshot/audio-clip-yanny-laurel-debate.html)
