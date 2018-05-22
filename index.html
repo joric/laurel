@@ -4,36 +4,93 @@
 <title>Laurel</title>
 <style>
 input[type=range] { width: 500px; }
+canvas { background-color: black; }
 </style>
 <script src="laurel_base64.js"></script>
 <script src="PitchShifter.js"></script>
 <script>
 
-function initFilters(context, source) {
+var rate = 1.0;
+
+function restart(buffer) {
+	source = audioContext.createBufferSource();
+	source.buffer = buffer;
+	source.onended = function () { restart(buffer); }
+	source.playbackRate.value = rate;
+	source.connect(lBand);
+	source.connect(mBand);
+	source.connect(hBand);
+	source.start();
+	dx = 0;
+}
+
+function init() {
+	AudioContext = window.AudioContext || window.webkitAudioContext;
+	audioContext = new AudioContext();
+
+	audioContext.suspend();
+
+	data = Uint8Array.from(atob(laurel_base64), c => c.charCodeAt(0));
+
+	analyser = audioContext.createAnalyser();
+	analyser.fftSize = 512;
+	analyser.smoothingTimeConstant = 0;
+
+	audioContext.decodeAudioData(data.buffer, function(buffer) { restart(buffer); });
+
+	initFilters(audioContext);
+
+	scriptNode = audioContext.createScriptProcessor(256, 1, 1);
+	scriptNode.connect(sum);
+	scriptNode.onaudioprocess = draw;
+
+	//setInterval(function(){ draw(); }, 1);
+
+	shifter.connect(analyser);
+}
+
+var dx = 0;
+function draw() {
+	if (audioContext.state=='suspended')
+		return;
+
+	canvas = document.getElementById("analyser");
+	canvasContext = canvas.getContext('2d');
+	data = new Uint8Array(analyser.frequencyBinCount);
+	analyser.getByteFrequencyData(data);
+	var bandHeight = canvas.height / data.length;
+
+	for (var i = 0, y = canvas.height - 1; i < data.length; i++, y -= bandHeight) {
+		var b = data[i]
+		var color = b | (b<<8) | (b<<16);
+		canvasContext.fillStyle = '#' + color.toString(16);
+		canvasContext.fillRect(dx, y, 1, -bandHeight);
+	}
+
+	dx = dx>=canvas.width ? 0 : dx+1;
+}
+
+function initFilters(audioContext, source) {
 	var gainDb = -40.0;
 	var bandSplit = [360,3600];
 
-	var hBand = context.createBiquadFilter();
+	hBand = audioContext.createBiquadFilter();
 	hBand.type = "lowshelf";
 	hBand.frequency.value = bandSplit[0];
 	hBand.gain.value = gainDb;
 
-	var hInvert = context.createGain();
+	var hInvert = audioContext.createGain();
 	hInvert.gain.value = -1.0;
 
-	var mBand = context.createGain();
+	mBand = audioContext.createGain();
 
-	var lBand = context.createBiquadFilter();
+	lBand = audioContext.createBiquadFilter();
 	lBand.type = "highshelf";
 	lBand.frequency.value = bandSplit[1];
 	lBand.gain.value = gainDb;
 
-	var lInvert = context.createGain();
+	var lInvert = audioContext.createGain();
 	lInvert.gain.value = -1.0;
-
-	source.connect(lBand);
-	source.connect(mBand);
-	source.connect(hBand);
 
 	hBand.connect(hInvert);
 	lBand.connect(lInvert);
@@ -41,43 +98,29 @@ function initFilters(context, source) {
 	hInvert.connect(mBand);
 	lInvert.connect(mBand);
 
-	lGain = context.createGain();
-	mGain = context.createGain();
-	hGain = context.createGain();
+	lGain = audioContext.createGain();
+	mGain = audioContext.createGain();
+	hGain = audioContext.createGain();
 
 	lBand.connect(lGain);
 	mBand.connect(mGain);
 	hBand.connect(hGain);
 
-	var sum = context.createGain();
+	sum = audioContext.createGain();
 	lGain.connect(sum);
 	mGain.connect(sum);
 	hGain.connect(sum);
 
-	shifter = new PitchShifter(context);
+	shifter = new PitchShifter(audioContext);
 
 	sum.connect(shifter);
 
-	shifter.connect(context.destination);
-}
-
-function init() {
-	AudioContext = window.AudioContext || window.webkitAudioContext;
-	context = new AudioContext();
-	context.suspend();
-	data = Uint8Array.from(atob(laurel_base64), c => c.charCodeAt(0));
-	context.decodeAudioData(data.buffer, function(buffer) {
-		source = context.createBufferSource();
-		source.buffer = buffer;
-		source.loop = true;
-		source.start();
-		initFilters(context, source);
-	});
+	shifter.connect(audioContext.destination);
 }
 
 function play(ctrl) {
-	ctrl.value = context.state!='suspended' ? "Click To Play" : "Click To Pause";
-	context.state=='suspended' ? context.resume() : context.suspend();
+	ctrl.value = audioContext.state!='suspended' ? "Click To Play" : "Click To Pause";
+	audioContext.state=='suspended' ? audioContext.resume() : audioContext.suspend();
 }
 
 function check(checked) {
@@ -88,7 +131,7 @@ function change(value, type, ctrl) {
 	value = parseFloat(value);
 	document.getElementById(type).innerText = value.toFixed(2);
 	switch(type)	{
-		case 'rate': source.playbackRate.value = value; break;
+		case 'rate': rate = source.playbackRate.value = value; break;
 		case 'pitch': shifter.pitchRatio = value; break;
 		case 'lowGain': lGain.gain.value = value; break;
 		case 'midGain': mGain.gain.value = value; break;
@@ -119,6 +162,10 @@ function change(value, type, ctrl) {
 
 <input type=range value=1 step=0.01 min=0 max=1 oninput="change(this.value, 'highGain')">
 <label>High Gain <span id="highGain">1.00</span></label></input><br>
+
+<br>
+
+<canvas width=512 height=512 id=analyser></canvas>
 
 <p><a href="https://github.com/joric/laurel">GitHub</a>
 </body>
