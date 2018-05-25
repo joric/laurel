@@ -4,7 +4,7 @@
 <title>Laurel</title>
 <style>
 input[type=range] { width: 500px; }
-canvas { background-color: black; }
+canvas { border: 1px solid #ccc; }
 </style>
 <script src="laurel_base64.js"></script>
 <script src="PitchShifter.js"></script>
@@ -61,7 +61,7 @@ function draw() {
 	var bandHeight = canvas.height / data.length;
 
 	for (var i = 0, y = canvas.height - 1; i < data.length; i++, y -= bandHeight) {
-		var b = data[i]
+		var b = 0xff-data[i]
 		var color = b | (b<<8) | (b<<16);
 		canvasContext.fillStyle = '#' + color.toString(16);
 		canvasContext.fillRect(dx, y, 1, -bandHeight);
@@ -163,9 +163,9 @@ function change(value, type, ctrl) {
 <input type=range value=1 step=0.01 min=0 max=1 oninput="change(this.value, 'highGain')">
 <label>High Gain <span id="highGain">1.00</span></label></input><br>
 
-<br>
+<h3>Spectrogram</h3>
 
-<canvas width=512 height=512 id=analyser></canvas>
+<canvas width=300 height=300 id=analyser></canvas>
 
 <p><a href="https://github.com/joric/laurel">GitHub</a>
 </body>
