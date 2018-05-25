@@ -5,6 +5,7 @@
 <style>
 input[type=range] { width: 500px; }
 canvas { border: 1px solid #ccc; }
+#github { position: absolute; right: 20px; bottom: 5px; }
 </style>
 <script src="laurel_base64.js"></script>
 <script src="PitchShifter.js"></script>
@@ -63,7 +64,7 @@ function draw() {
 
 	if (clear) {
 		clear = false;
-		//canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+		canvasContext.clearRect(0, 0, canvas.width, canvas.height);
 	}
 
 	for (var i = 0, y = canvas.height - 1; i < data.length; i++, y -= bandHeight) {
@@ -124,7 +125,7 @@ function initFilters(audioContext, source) {
 	shifter.connect(audioContext.destination);
 }
 
-function play(ctrl) {
+function toggle_play(ctrl) {
 	ctrl.value = audioContext.state!='suspended' ? "Click To Play" : "Click To Pause";
 	audioContext.state=='suspended' ? audioContext.resume() : audioContext.suspend();
 }
@@ -136,8 +137,7 @@ function check(checked) {
 function change(value, type, ctrl) {
 	value = parseFloat(value);
 	document.getElementById(type).innerText = value.toFixed(2);
-	clear = true;
-	switch(type)	{
+	switch(type) {
 		case 'rate': rate = source.playbackRate.value = value; break;
 		case 'pitch': shifter.pitchRatio = value; break;
 		case 'lowGain': lGain.gain.value = value; break;
@@ -146,12 +146,25 @@ function change(value, type, ctrl) {
 	}
 }
 
+function reset_form(form) {
+	for (c of ['pitch','rate','lowGain','midGain','highGain']) {
+		ctrl = document.getElementById(c);
+		change(1, c);
+		ctrl.value = 1.0;
+	}
+	shifter.bypass = false;
+	form.reset();
+	clear = true;
+}
+
 </script>
 <body onload=init()>
 <h2>Laurel</h2>
 <p>Yanny-Laurel debate-related Web Audio API pitch shifter</p>
 
-<input type=button id=play value="Click To Play" onclick="play(this)"><br><br>
+<form>
+<input type=button id=play value="Click To Play" onclick="toggle_play(this)">
+<input type=button value="Reset Settings" onclick="reset_form(this.form)"><br><br>
 
 <input type=range value=1 step=0.01 min=0.5 max=1.5 oninput="change(this.value,'pitch')">
 <label>Pitch <span id="pitch">1.00</span></label></input>
@@ -169,11 +182,12 @@ function change(value, type, ctrl) {
 
 <input type=range value=1 step=0.01 min=0 max=1 oninput="change(this.value, 'highGain')">
 <label>High Gain <span id="highGain">1.00</span></label></input><br>
+</form>
 
 <h3>Spectrogram</h3>
 
 <canvas width=300 height=300 id=analyser></canvas>
 
-<p><a href="https://github.com/joric/laurel">GitHub</a>
+<p id="github"><a href="https://github.com/joric/laurel">GitHub</a></p>
 </body>
 </html>
