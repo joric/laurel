@@ -11,6 +11,7 @@ canvas { border: 1px solid #ccc; }
 <script>
 
 var rate = 1.0;
+var clear = false;
 
 function restart(buffer) {
 	source = audioContext.createBufferSource();
@@ -59,6 +60,11 @@ function draw() {
 	data = new Uint8Array(analyser.frequencyBinCount);
 	analyser.getByteFrequencyData(data);
 	var bandHeight = canvas.height / data.length;
+
+	if (clear) {
+		clear = false;
+		canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+	}
 
 	for (var i = 0, y = canvas.height - 1; i < data.length; i++, y -= bandHeight) {
 		var b = 0xff-data[i]
@@ -130,6 +136,7 @@ function check(checked) {
 function change(value, type, ctrl) {
 	value = parseFloat(value);
 	document.getElementById(type).innerText = value.toFixed(2);
+	clear = true;
 	switch(type)	{
 		case 'rate': rate = source.playbackRate.value = value; break;
 		case 'pitch': shifter.pitchRatio = value; break;
