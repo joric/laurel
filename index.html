@@ -15,146 +15,143 @@ var rate = 1.0;
 var clear = false;
 
 function restart(buffer) {
-	source = audioContext.createBufferSource();
-	source.buffer = buffer;
-	source.onended = function () { restart(buffer); }
-	source.playbackRate.value = rate;
-	source.connect(lBand);
-	source.connect(mBand);
-	source.connect(hBand);
-	source.start();
-	dx = 0;
+    source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.onended = function () { restart(buffer); }
+    source.playbackRate.value = rate;
+    source.connect(lBand);
+    source.connect(mBand);
+    source.connect(hBand);
+    source.start();
+    dx = 0;
 }
 
 function init() {
-	AudioContext = window.AudioContext || window.webkitAudioContext;
-	audioContext = new AudioContext();
+    AudioContext = window.AudioContext || window.webkitAudioContext;
+    audioContext = new AudioContext();
 
-	audioContext.suspend();
+    audioContext.suspend();
 
-	data = Uint8Array.from(atob(laurel_base64), c => c.charCodeAt(0));
+    data = Uint8Array.from(atob(laurel_base64), c => c.charCodeAt(0));
 
-	analyser = audioContext.createAnalyser();
-	analyser.fftSize = 512;
-	analyser.smoothingTimeConstant = 0;
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 512;
+    analyser.smoothingTimeConstant = 0;
 
-	audioContext.decodeAudioData(data.buffer, function(buffer) { restart(buffer); });
+    audioContext.decodeAudioData(data.buffer, function(buffer) { restart(buffer); });
 
-	initFilters(audioContext);
+    initFilters(audioContext);
 
-	scriptNode = audioContext.createScriptProcessor(256, 1, 1);
-	scriptNode.connect(sum);
-	scriptNode.onaudioprocess = draw;
+    scriptNode = audioContext.createScriptProcessor(256, 1, 1);
+    scriptNode.connect(sum);
+    scriptNode.onaudioprocess = draw;
 
-	//setInterval(function(){ draw(); }, 1);
+    //setInterval(function(){ draw(); }, 1);
 
-	shifter.connect(analyser);
+    shifter.connect(analyser);
+    shifter.bypass = true;
 }
 
 var dx = 0;
 function draw() {
-	if (audioContext.state=='suspended')
-		return;
+    if (audioContext.state=='suspended')
+        return;
 
-	canvas = document.getElementById("analyser");
-	canvasContext = canvas.getContext('2d');
-	data = new Uint8Array(analyser.frequencyBinCount);
-	analyser.getByteFrequencyData(data);
-	var bandHeight = canvas.height / data.length;
+    canvas = document.getElementById("analyser");
+    canvasContext = canvas.getContext('2d');
+    data = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(data);
+    var bandHeight = canvas.height / data.length;
 
-	if (clear) {
-		clear = false;
-		canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-	}
+    if (clear) {
+        clear = false;
+        canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+    }
 
-	for (var i = 0, y = canvas.height - 1; i < data.length; i++, y -= bandHeight) {
-		var b = 0xff-data[i]
-		var color = b | (b<<8) | (b<<16);
-		canvasContext.fillStyle = '#' + color.toString(16);
-		canvasContext.fillRect(dx, y, 1, -bandHeight);
-	}
+    for (var i = 0, y = canvas.height - 1; i < data.length; i++, y -= bandHeight) {
+        var b = 0xff-data[i]
+        var color = b | (b<<8) | (b<<16);
+        canvasContext.fillStyle = '#' + color.toString(16);
+        canvasContext.fillRect(dx, y, 1, -bandHeight);
+    }
 
-	dx = dx>=canvas.width ? 0 : dx+1;
+    dx = dx>=canvas.width ? 0 : dx+1;
 }
 
 function initFilters(audioContext, source) {
-	var gainDb = -40.0;
-	var bandSplit = [360,3600];
+    var gainDb = -40.0;
+    var bandSplit = [360,3600];
 
-	hBand = audioContext.createBiquadFilter();
-	hBand.type = "lowshelf";
-	hBand.frequency.value = bandSplit[0];
-	hBand.gain.value = gainDb;
+    hBand = audioContext.createBiquadFilter();
+    hBand.type = "lowshelf";
+    hBand.frequency.value = bandSplit[0];
+    hBand.gain.value = gainDb;
 
-	var hInvert = audioContext.createGain();
-	hInvert.gain.value = -1.0;
+    var hInvert = audioContext.createGain();
+    hInvert.gain.value = -1.0;
 
-	mBand = audioContext.createGain();
+    mBand = audioContext.createGain();
 
-	lBand = audioContext.createBiquadFilter();
-	lBand.type = "highshelf";
-	lBand.frequency.value = bandSplit[1];
-	lBand.gain.value = gainDb;
+    lBand = audioContext.createBiquadFilter();
+    lBand.type = "highshelf";
+    lBand.frequency.value = bandSplit[1];
+    lBand.gain.value = gainDb;
 
-	var lInvert = audioContext.createGain();
-	lInvert.gain.value = -1.0;
+    var lInvert = audioContext.createGain();
+    lInvert.gain.value = -1.0;
 
-	hBand.connect(hInvert);
-	lBand.connect(lInvert);
+    hBand.connect(hInvert);
+    lBand.connect(lInvert);
 
-	hInvert.connect(mBand);
-	lInvert.connect(mBand);
+    hInvert.connect(mBand);
+    lInvert.connect(mBand);
 
-	lGain = audioContext.createGain();
-	mGain = audioContext.createGain();
-	hGain = audioContext.createGain();
+    lGain = audioContext.createGain();
+    mGain = audioContext.createGain();
+    hGain = audioContext.createGain();
 
-	lBand.connect(lGain);
-	mBand.connect(mGain);
-	hBand.connect(hGain);
+    lBand.connect(lGain);
+    mBand.connect(mGain);
+    hBand.connect(hGain);
 
-	sum = audioContext.createGain();
-	lGain.connect(sum);
-	mGain.connect(sum);
-	hGain.connect(sum);
+    sum = audioContext.createGain();
+    lGain.connect(sum);
+    mGain.connect(sum);
+    hGain.connect(sum);
 
-	shifter = new PitchShifter(audioContext);
+    shifter = new PitchShifter(audioContext);
 
-	sum.connect(shifter);
+    sum.connect(shifter);
 
-	shifter.connect(audioContext.destination);
+    shifter.connect(audioContext.destination);
 }
 
 function toggle_play(ctrl) {
-	ctrl.value = audioContext.state!='suspended' ? "Click To Play" : "Click To Pause";
-	audioContext.state=='suspended' ? audioContext.resume() : audioContext.suspend();
-}
-
-function check(checked) {
-	shifter.bypass = checked;
+    ctrl.value = audioContext.state!='suspended' ? "Click To Play" : "Click To Pause";
+    audioContext.state=='suspended' ? audioContext.resume() : audioContext.suspend();
 }
 
 function change(value, type, ctrl) {
-	value = parseFloat(value);
-	document.getElementById(type).innerText = value.toFixed(2);
-	switch(type) {
-		case 'rate': rate = source.playbackRate.value = value; break;
-		case 'pitch': shifter.pitchRatio = value; break;
-		case 'lowGain': lGain.gain.value = value; break;
-		case 'midGain': mGain.gain.value = value; break;
-		case 'highGain': hGain.gain.value = value; break;
-	}
+    value = parseFloat(value);
+    document.getElementById(type).innerText = value.toFixed(2);
+    switch(type) {
+        case 'rate': rate = source.playbackRate.value = value; break;
+        case 'pitch': shifter.pitchRatio = value; shifter.bypass = value==1.0; break;
+        case 'lowGain': lGain.gain.value = value; break;
+        case 'midGain': mGain.gain.value = value; break;
+        case 'highGain': hGain.gain.value = value; break;
+    }
 }
 
 function reset_form(form) {
-	for (c of ['pitch','rate','lowGain','midGain','highGain']) {
-		ctrl = document.getElementById(c);
-		change(1, c);
-		ctrl.value = 1.0;
-	}
-	shifter.bypass = false;
-	form.reset();
-	clear = true;
+    for (c of ['pitch','rate','lowGain','midGain','highGain']) {
+        ctrl = document.getElementById(c);
+        change(1, c);
+        ctrl.value = 1.0;
+    }
+    shifter.bypass = true;
+    form.reset();
+    clear = true;
 }
 
 </script>
@@ -168,7 +165,6 @@ function reset_form(form) {
 
 <input type=range value=1 step=0.01 min=0.5 max=1.5 oninput="change(this.value,'pitch')">
 <label>Pitch <span id="pitch">1.00</span></label></input>
-<label><input type=checkbox onchange="check(this.checked)">Bypass</label>
 <br>
 
 <input type=range value=1 step=0.01 min=0.5 max=1.5 oninput="change(this.value,'rate')">
